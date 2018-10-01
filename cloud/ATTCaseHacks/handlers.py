@@ -121,14 +121,14 @@ class EmergencyHandler(webapp2.RequestHandler):
         self.response.headers['Access-Control-Allow-Origin'] = '*'
 
         try:
-            is_locked = self.request.get('is_locked', True)
+            lock = self.request.get('lock', True)
             response = Emergency().update(
-                is_locked=is_locked,
+                is_locked=lock,
             )
             AuditLog().add(
                 user_id='',
                 lock_id='emergency',
-                action='Emergency is set to {}'.format(is_locked)
+                action='Emergency is set to {}'.format(lock)
             )
 
             self.response.out.write(json.dumps({'success': True, 'error': [], 'response': response}))
