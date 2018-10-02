@@ -7,7 +7,7 @@ import webapp2
 from google.appengine.ext.webapp import template
 
 import utils
-from models import SmartUserAccess, AuditLog, Emergency
+from models import SmartUserAccess, AuditLog, Emergency, OpenLock
 
 
 class SmartUserAccessHandler(webapp2.RequestHandler):
@@ -51,6 +51,53 @@ class SmartUserAccessHandler(webapp2.RequestHandler):
         except Exception as e:
             self.response.out.write(json.dumps({'success': False, 'error': e.message, 'response': None}))
             logging.error(traceback.format_exc())
+
+    def open_lock(self):
+        self.response.headers['Content-Type'] = "application/json"
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+
+        try:
+            user_id = self.request.get('user_id')
+            lock_id = self.request.get('lock_id')
+            success = SmartUserAccess().verify(
+                user_id=user_id,
+                lock_id=lock_id,
+            )
+            if success:
+                action = 'successful attempt to unlock {} by {}'.format(lock_id, user_id)
+                OpenLock().open(
+                    lock_id=lock_id,
+                    last_access_time=datetime.datetime.now()
+                )
+            else:
+                action = 'failed attempt to unlock {} by {}'.format(lock_id, user_id)
+
+            AuditLog().add(
+                user_id=user_id,
+                lock_id=lock_id,
+                action=action
+            )
+
+            self.response.out.write(json.dumps({'success': success, 'error': [], 'response': None}))
+        except Exception as e:
+            self.response.out.write(json.dumps({'success': False, 'error': e.message, 'response': None}))
+            logging.error(traceback.format_exc())
+
+    def get_lock_status(self):
+        self.response.headers['Content-Type'] = "application/json"
+        self.response.headers['Access-Control-Allow-Origin'] = '*'
+
+        try:
+            lock_id = self.request.get('lock_id')
+            success = OpenLock().is_open(
+                lock_id=lock_id,
+            )
+
+            self.response.out.write(json.dumps({'success': success, 'error': [], 'response': None}))
+        except Exception as e:
+            self.response.out.write(json.dumps({'success': False, 'error': e.message, 'response': None}))
+            logging.error(traceback.format_exc())
+
 
     def verify(self):
         self.response.headers['Content-Type'] = "application/json"

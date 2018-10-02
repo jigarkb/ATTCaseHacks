@@ -18,6 +18,13 @@ class Emergency(db.Model):
     modified_at = db.DateTimeProperty(auto_now=True)
 
 
+class OpenLock(db.Model):
+    lock_id = db.StringProperty()
+    last_access_time = db.DateTimeProperty()
+    created_at = db.DateTimeProperty(auto_now_add=True)
+    modified_at = db.DateTimeProperty(auto_now=True)
+
+
 class AuditLog(db.Model):
     user_id = db.StringProperty()
     lock_id = db.StringProperty()

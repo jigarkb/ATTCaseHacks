@@ -20,13 +20,13 @@ class SmartUserAccess(object):
     def verify(self, **data):
         self.check_validity(method='verify', data=data)
 
-        if Emergency().is_emergency():
-            return False
         key_name = "{}/{}".format(data["user_id"], data['lock_id'])
         access = model.SmartUserAccess.get_by_key_name(key_name)
         if not access:
             return False
         if access.access_until < datetime.datetime.now():
+            return False
+        if Emergency().is_emergency() and not access.is_firstnet_user:
             return False
         return True
 
@@ -81,6 +81,82 @@ class SmartUserAccess(object):
         datastore_entity.access_until = json_object["access_until"]
 
         return datastore_entity, access_exists
+
+    @staticmethod
+    def check_validity(method, data):
+        error = []
+
+        if error:
+            raise Exception(error)
+
+
+class OpenLock(object):
+    def __init__(self):
+        pass
+
+    def open(self, **data):
+        self.check_validity(method='open', data=data)
+
+        lock = self.get_datastore_entity(data)
+        lock.last_access_time = datetime.datetime.now()
+        lock.put()
+
+    def is_open(self, **data):
+        self.check_validity(method='is_open', data=data)
+
+        key_name = data['lock_id']
+        lock = model.OpenLock.get_by_key_name(key_name)
+        if not lock:
+            return False
+        if lock.last_access_time + datetime.timedelta(seconds=5) < datetime.datetime.now():
+            return False
+        return True
+
+    @staticmethod
+    def get(debug=False, **filters):
+        query_string = "select * from OpenLock"
+
+        filters = {key: val for key, val in filters.iteritems() if val != None}
+
+        i = 0
+        for field in filters:
+            if i == 0:
+                query_string += " where "
+
+            if i < len(filters) - 1:
+                query_string += "%s='%s' and " % (field, filters[field])
+            else:
+                query_string += "%s='%s'" % (field, filters[field])
+            i += 1
+
+        response = utils.fetch_gql(query_string)
+        if debug:
+            logging.error("Query String: %s\n\n Response Length: %s" % (query_string, len(response)))
+
+        return response
+
+    @staticmethod
+    def get_json_object(datastore_entity):
+        json_object = {
+            "lock_id": datastore_entity.lock_id,
+            "last_access_time": datastore_entity.access_until.strftime('%Y-%m-%d %H:%M:%S'),
+            "modified_at": datastore_entity.modified_at.strftime('%Y-%m-%d %H:%M:%S'),
+            "created_at": datastore_entity.created_at.strftime('%Y-%m-%d %H:%M:%S'),
+        }
+
+        return json_object
+
+    @staticmethod
+    def get_datastore_entity(json_object):
+        key_name = json_object["lock_id"]
+        datastore_entity = model.OpenLock.get_by_key_name(key_name)
+        if not datastore_entity:
+            datastore_entity = model.OpenLock(key_name=key_name)
+
+        datastore_entity.lock_id = json_object["lock_id"]
+        datastore_entity.access_until = json_object["last_access_time"]
+
+        return datastore_entity
 
     @staticmethod
     def check_validity(method, data):
