@@ -59,6 +59,7 @@ class SmartUserAccess(object):
             "user_id": datastore_entity.user_id,
             "lock_id": datastore_entity.lock_id,
             "granted_by": datastore_entity.granted_by,
+            "is_firstnet_user": datastore_entity.is_firstnet_user,
             "access_until": datastore_entity.access_until.strftime('%Y-%m-%d %H:%M:%S'),
             "modified_at": datastore_entity.modified_at.strftime('%Y-%m-%d %H:%M:%S'),
             "created_at": datastore_entity.created_at.strftime('%Y-%m-%d %H:%M:%S'),
@@ -79,6 +80,7 @@ class SmartUserAccess(object):
         datastore_entity.lock_id = json_object["lock_id"]
         datastore_entity.granted_by = json_object["granted_by"]
         datastore_entity.access_until = json_object["access_until"]
+        datastore_entity.is_firstnet_user = json_object["is_firstnet_user"]
 
         return datastore_entity, access_exists
 

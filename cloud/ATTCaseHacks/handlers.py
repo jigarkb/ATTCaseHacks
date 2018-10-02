@@ -12,7 +12,9 @@ from models import SmartUserAccess, AuditLog, Emergency, OpenLock
 
 class SmartUserAccessHandler(webapp2.RequestHandler):
     def home(self):
-        template_values = {}
+        template_values = {
+            "emergency_status": "true" if Emergency().is_emergency() else "false",
+        }
         page = utils.template("index.html", "ATTCaseHacks/html")
         self.response.out.write(template.render(page, template_values))
 
@@ -23,7 +25,7 @@ class SmartUserAccessHandler(webapp2.RequestHandler):
         try:
             user_id = self.request.get('user_id')
             lock_id = self.request.get('lock_id')
-            granted_by = self.request.get('granted_by')
+            granted_by = self.request.get('granted_by', 'admin')
             is_firstnet_user = True if self.request.get('is_firstnet_user') == 'true' else False
             access_time = self.request.get('access_time')
             if not access_time:
@@ -63,6 +65,7 @@ class SmartUserAccessHandler(webapp2.RequestHandler):
                 user_id=user_id,
                 lock_id=lock_id,
             )
+            logging.error(success)
             if success:
                 action = 'successful attempt to unlock {} by {}'.format(lock_id, user_id)
                 OpenLock().open(
@@ -71,7 +74,7 @@ class SmartUserAccessHandler(webapp2.RequestHandler):
                 )
             else:
                 action = 'failed attempt to unlock {} by {}'.format(lock_id, user_id)
-
+            logging.error(action)
             AuditLog().add(
                 user_id=user_id,
                 lock_id=lock_id,
@@ -168,7 +171,7 @@ class EmergencyHandler(webapp2.RequestHandler):
         self.response.headers['Access-Control-Allow-Origin'] = '*'
 
         try:
-            lock = self.request.get('lock', True)
+            lock = True if self.request.get('lock', 'false') == 'true' else False
             response = Emergency().update(
                 is_locked=lock,
             )
