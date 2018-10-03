@@ -53,6 +53,7 @@
           <th style="width: 33%;border-top: 0px;">Lock ID</th>
           <th style="width: 33%;border-top: 0px;">User ID</th>
           <th style="width: 34%;border-top: 0px;">First Net User</th>
+          <th style="width: 34%;border-top: 0px;">Access Until</th>
         </tr>
         </thead>
       </table>
@@ -155,6 +156,12 @@
         {
           data: "is_firstnet_user",
           targets: 2,
+          sortable: false,
+          defaultContent: ""
+        },
+        {
+          data: "access_until",
+          targets: 3,
           sortable: false,
           defaultContent: ""
         }

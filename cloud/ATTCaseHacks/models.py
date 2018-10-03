@@ -13,8 +13,6 @@ class SmartUserAccess(object):
         self.check_validity(method='add', data=data)
 
         access, access_exists = self.get_datastore_entity(data)
-        if access_exists:
-            return True
         access.put()
 
     def verify(self, **data):
